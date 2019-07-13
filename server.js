@@ -2,7 +2,8 @@ var bodyParser = require('body-parser')
 const express = require('express');
 const mongoose = require('mongoose');
 const app = express();
-const User = require('./models/User');
+const User = require('./models/User'); //import the file we created
+const Post = require('./models/Post'); //import the file we created
 
 const db = "mongodb+srv://bryan:11!Khema@cluster0-wyric.mongodb.net/test?retryWrites=true&w=majority"
 
@@ -38,6 +39,42 @@ app.get('/users', (req, res) => {
     .then(users => res.json(users))
     .catch(err => console.log(err))
 })
+
+app.post('/posts', (req, res) => {
+	User.findOne({email: req.body.email}).then( user =>{
+		console.log("User found", user);
+		if (user) {
+			const newPost = new Post({
+				message: req.body.message,
+				user: user
+			})
+
+			newPost
+				.save()
+				.then(post => res.json (post))
+				.catch(err => res.json(err))
+		} else {
+			return res.status(400).json({message: "User not found"})
+		}
+	})
+});
+
+// app.get('/posts', (req,res) => {
+	
+// });
+
+
+//Fetch posts by email
+app.post('/users/posts', (req,res) => {
+	User.findOne({email: req.body.email})
+	.then( user => {
+
+	Post.find({email: req.body.email})
+		.then(posts => res.json(posts))
+		.catch(err => console.log(err))
+	})
+	.catch(err => res.json(err))
+});
 
 const port = process.env.PORT || 5000;
 
