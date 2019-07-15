@@ -8,7 +8,7 @@ const PostSchema = new Schema({
         required: true
     },
     user: {
-        type: Schema.ObjectId, ref: "user"
+        type: Schema.ObjectId, ref: 'user'
     },
     date: {
         type: Date,

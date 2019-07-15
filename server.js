@@ -1,81 +1,51 @@
-var bodyParser = require('body-parser')
 const express = require('express');
 const mongoose = require('mongoose');
+const bodyParser = require('body-parser');
 const app = express();
-const User = require('./models/User'); //import the file we created
-const Post = require('./models/Post'); //import the file we created
+const User = require('./models/User');
+const Post = require('./models/Post');
+const keys = require('./config/keys');
+const passport = require('passport');
 
-const db = "mongodb+srv://bryan:11!Khema@cluster0-wyric.mongodb.net/test?retryWrites=true&w=majority"
+// Configure express to read body from a POST request
+app.use(bodyParser.urlencoded({ extended: false }));
 
-app.use(bodyParser.urlencoded({ extended: false}));
+// Database connection string
+const db = keys.mongoURI;
 
-mongoose.connect(db, {})
-.then(() => console.log("Db Connected"))
-.catch(err => console.log(err));
+// Connect to mongo with mongoose
+mongoose
+    .connect(db, {})
+    .then(()=> console.log("Db Connected"))
+    .catch(err => console.log(err));
 
-// Body parser middleware
-app.use(express.urlencoded());
+//Init passportjs
+app.use(passport.initialize());
 
-/* GET home page. */
+// Import the function from file the and invoke immediately
+require('./config/passport')(passport);
+
+// Anything that goes to http://localhost:5000/users/
+// goes in User.js
+const userRoutes = require('./routes/User');
+app.use('/users', userRoutes);
+
+//Post routes
+const postRoutes = require('./routes/Post');
+app.use('/posts', postRoutes);
+
+//Auth routes
+const authRoutes = require('./routes/Auth');
+app.use('/auth', authRoutes);
+
+// Method: GET
+// The homepage
 app.get('/', (req, res) => res.json({
-	msg: "Hello! Amigo!"
+    msg: "Hello Amingo!!"
 }));
 
-app.post('/users', (req, res) => {
-	const newUser = new User({
-	    name: req.body.name,
-	    email: req.body.email,
-	    password: req.body.password
-	});
-
-	newUser
-	    .save()
-	    .then(user => res.json(user))
-	    .catch(err => res.json(err));
-});
-
-app.get('/users', (req, res) => {
-    User.find()
-    .then(users => res.json(users))
-    .catch(err => console.log(err))
-})
-
-app.post('/posts', (req, res) => {
-	User.findOne({email: req.body.email}).then( user =>{
-		console.log("User found", user);
-		if (user) {
-			const newPost = new Post({
-				message: req.body.message,
-				user: user
-			})
-
-			newPost
-				.save()
-				.then(post => res.json (post))
-				.catch(err => res.json(err))
-		} else {
-			return res.status(400).json({message: "User not found"})
-		}
-	})
-});
-
-// app.get('/posts', (req,res) => {
-	
-// });
-
-
-//Fetch posts by email
-app.post('/users/posts', (req,res) => {
-	User.findOne({email: req.body.email})
-	.then( user => {
-
-	Post.find({email: req.body.email})
-		.then(posts => res.json(posts))
-		.catch(err => console.log(err))
-	})
-	.catch(err => res.json(err))
-});
-
+// If port is specified, user it. Otherwise default to 5000
 const port = process.env.PORT || 5000;
 
-app.listen(port, () => console.log(`Server running at http://localhost:${port}`));
+// Connect to the port.
+app.listen(port, () => console.log(`Your application is running @ http://localhost:${port}`));
