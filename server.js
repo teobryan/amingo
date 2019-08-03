@@ -2,39 +2,42 @@ const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const app = express();
-const User = require('./models/User');
-const Post = require('./models/Post');
+const cors = require('cors');
 const keys = require('./config/keys');
 const passport = require('passport');
 
 // Configure express to read body from a POST request
 app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
+
+//Configure express to use cors
+app.use(cors());
 
 // Database connection string
 const db = keys.mongoURI;
 
 // Connect to mongo with mongoose
 mongoose
-    .connect(db, {})
+    .connect(db, { useNewUrlParser: true })
     .then(()=> console.log("Db Connected"))
     .catch(err => console.log(err));
 
-//Init passportjs
+// Init passportjs
 app.use(passport.initialize());
+app.use(bodyParser.json());
 
 // Import the function from file the and invoke immediately
 require('./config/passport')(passport);
 
-// Anything that goes to http://localhost:5000/users/
-// goes in User.js
+// User rotues
 const userRoutes = require('./routes/User');
-app.use('/users', userRoutes);
+app.use('/users', passport.authenticate('jwt', {session:false}), userRoutes);
 
-//Post routes
+// Post routes
 const postRoutes = require('./routes/Post');
-app.use('/posts', postRoutes);
+app.use('/posts', passport.authenticate('jwt', {session:false}), postRoutes);
 
-//Auth routes
+// Auth routes
 const authRoutes = require('./routes/Auth');
 app.use('/auth', authRoutes);
 
@@ -43,9 +46,14 @@ app.use('/auth', authRoutes);
 app.get('/', (req, res) => res.json({
     msg: "Hello Amingo!!"
 }));
+/*
+app.post('/register-user', (req, res) => {
+    res.json({ msg: 'done' })
+});
+*/
 
 // If port is specified, user it. Otherwise default to 5000
 const port = process.env.PORT || 5000;
 
 // Connect to the port.
-app.listen(port, () => console.log(`Your application is running @ http://localhost:${port}`));
+app.listen(port, () => console.log(`Your application is running @ http://localhost:${port}`))

@@ -3,27 +3,7 @@ const User = require('../models/User');
 
 const router = express.Router();
 
-/**
- * Post route for creating a new user.
- * 
- * @name POST: /users/
- * 
- * @param {string} name - Name of user
- * @param {string} email - Email of customer
- * @param {password} password - Password of customer
- */
-router.post('/', (req, res) => {
-    const newUser = new User(({
-        name: req.body.name,
-        email: req.body.email,
-        password: req.body.password
-    }))
 
-    newUser
-        .save()
-        .then(user => res.json(user))
-        .catch(err => console.log(err))
-});
 
 
 /**
@@ -32,36 +12,45 @@ router.post('/', (req, res) => {
  * @name GET: /users/
  */
 router.get('/', (req, res) => {
-    User.find()
-        .then(users => res.json(users))
-        .catch(err => console.log(err)) 
+    res.json(req.user); 
 });
-
 
 /**
- * Get route for fetching all the posts of a user.
+ * Post route for following a user
  * 
- * @name POST: /posts/
- * 
- * @param {string} email - Email of customer
+ * @name POST: /users/:userId/follow
  */
-router.post('/posts', (req, res) => {
-    // User model (mongoose) will find an email from req.body
-    User.findOne({email: req.body.email})
-        // Once mongo responds...
-        .then( user => {
-            // Post model (mongoose) will search for user
-            Post.find({user: user})
-                // Then when mongo responds...
-                .then(posts => {
-                    // res (express) will output the result
-                    res.json(posts)
+router.post('/:userId/follow', (req, res) => {
+    //Fetch the object of logged in user
+    User.findById(req.user.id)
+        .then( loggedInUser => {
+            //Fetch the object of user to follow
+            User.findById(req.params.userId)
+                .then(userToFollow =>{
+                    //Add user into followers list
+                    loggedInUser.followers.push(userToFollow);
+                    loggedInUser
+                        .save()
+                        .then( _user =>{
+                            res.json(_user)
+                        })
+                        .catch(err => res.json(err))
                 })
-                // If Post model fails, log the error
-                .catch(err => console.log(err)) 
+                .catch(err => res.json({"message": "Invalid user to follow"}));
         })
-        // If User model fails, log the error.
-        .catch(err => res.json(err))
 });
+
+/**
+ * Get route for feching list of followers
+ * 
+ * @name GET: /users/followers
+ */
+router.get('/followers', (req, res) => {
+    User.findById(req.user.id)
+        .populate('followers')
+        .then(user=> {
+            res.json(user)
+        })
+})
 
 module.exports = router;

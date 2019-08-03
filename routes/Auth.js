@@ -8,15 +8,18 @@ const router = express.Router();
 
 //Register route
 router.post('/register', (req, res) => {
-    User.findOne({email: req.body.email})
+    User.findOne({email: req.body.email.toLocaleLowerCase()})
         .then(user => {
             if(user) {
                 res.status(400).json({"message": "Email alerady exist"})
+                
             } else {
+
                 const newUser = new User({
                     name: req.body.name,
-                    email: req.body.email,
-                    password: req.body.password
+                    email: req.body.email.toLowerCase(),
+                    password: req.body.password,
+                    gender: req.body.gender
                 });
 
                 bcrypt.genSalt((err, salt) => {
@@ -33,9 +36,44 @@ router.post('/register', (req, res) => {
         })
 });
 
-//Login route
+/**
+ * Post route for login.
+ * 
+ * @name POST: /auth/login/
+ * 
+ * @param {string} email - email of the user
+ * @param {string} password - password of user
+ */
 router.post('/login', (req, res) => {
-    
-})
+    User.findOne({email: req.body.email})
+     .then(user=>{
+         if(!user) {
+             return res.status(400).json({"message": "Email doesn't exist"});
+         } else {
+             bcrypt.compare(req.body.password, user.password)
+                 .then(isMatch => {
+                     
+                     if (isMatch) {
+                         const payload = {id: user.id, name: user.name, email: user.email};
+ 
+                         // Sign Token
+                         jwt.sign(
+                             payload,
+                             keys.secret,
+                             (err, token) => {
+                                 res.json({
+                                     success: true,
+                                     token: token,
+                                     name: user.name
+                                 });
+                             }
+                         );
+                     } else {
+                         return res.status(400).json({"message": "Password is invalid"})
+                     }
+                 })
+         }
+     })
+ });
 
 module.exports = router;
