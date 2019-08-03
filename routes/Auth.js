@@ -11,7 +11,7 @@ router.post('/register', (req, res) => {
     User.findOne({email: req.body.email.toLocaleLowerCase()})
         .then(user => {
             if(user) {
-                res.status(400).json({"message": "Email alerady exist"})
+                res.status(400).json({"message": "Email already exist"})
                 
             } else {
 
